@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import {
   Image,
@@ -7,16 +7,37 @@ import {
   TouchableOpacity,
   Text,
   View,
+  Alert,
 } from "react-native";
+import { useAuth } from "././../Auth/authContext";
 import "../../global.css";
 
-export default function login() {
-
+export default function Login() {
   const router = useRouter();
+  const { onLogin } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const navigateToRegister = () => {
-    router.push("/Auth/register"); 
+    router.push("/screens/register");
   };
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password");
+      return;
+    }
+
+    try {
+      const result = await onLogin(email, password);
+      // Navigate to main app or home screen
+      router.replace("/(tabs)");
+    } catch (error) {
+      Alert.alert("Login Failed", "Invalid credentials. Please try again.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Top Image */}
@@ -42,12 +63,18 @@ export default function login() {
           placeholder="Email or Username"
           placeholderTextColor="#A9A9A9"
           style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
         <TextInput
           placeholder="Password"
           placeholderTextColor="#A9A9A9"
           secureTextEntry
           style={styles.input}
+          value={password}
+          onChangeText={setPassword}
         />
         <TouchableOpacity>
           <Text style={styles.forgotPassword}>Forgot Password?</Text>
@@ -56,7 +83,7 @@ export default function login() {
 
       {/* Sign In Button */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.signInButton}>
+        <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
           <Text style={styles.signInButtonText}>Sign In</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={navigateToRegister}>

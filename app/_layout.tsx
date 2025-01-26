@@ -8,9 +8,9 @@ import 'react-native-reanimated';
 import "../global.css";
 
 import { useColorScheme } from '@/components/useColorScheme';
+import AuthProvider  from './Auth/authContext';
 
 export {
-  // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
@@ -49,11 +49,17 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="Auth/login" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen 
+            name="(tabs)" 
+            options={{ 
+              headerShown: false 
+            }} 
+          />
+        </Stack>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

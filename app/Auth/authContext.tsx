@@ -1,24 +1,35 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 interface AuthProps {
   authState?: { token: string | null; authenticated: boolean | null };
-  onRegister?: (email: string, password: string) => Promise<any>;
-  onLogin?: (email: string, password: string) => Promise<any>;
-  onLogout?: () => Promise<any>;
+  onRegister: (email: string, password: string) => Promise<any>;
+  onLogin: (email: string, password: string) => Promise<any>;
+  onLogout: () => Promise<any>;
 }
 
 const TOKEN_KEY = "jwtoken";
 export const API_URL = "https://api.developbetterapps.com";
 
-export const AuthContext = createContext<AuthProps>({});
+export const AuthContext = createContext<AuthProps>({
+  authState: { token: null, authenticated: null },
+  onRegister: async () => {},
+  onLogin: async () => {},
+  onLogout: async () => {},
+});
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };
 
-export const AuthProvider = ({ children }: any) => {
+const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [authState, setAuthState] = useState<{
     token: string | null;
     authenticated: boolean | null;
@@ -28,7 +39,6 @@ export const AuthProvider = ({ children }: any) => {
   });
 
   useEffect(() => {
-    // Check for existing token on app startup
     loadToken();
   }, []);
 
@@ -56,10 +66,8 @@ export const AuthProvider = ({ children }: any) => {
           authenticated: true,
         });
 
-        // Store token securely
         await SecureStore.setItemAsync(TOKEN_KEY, response.data.token);
 
-        // Set default authorization header
         axios.defaults.headers.common[
           "Authorization"
         ] = `Bearer ${response.data.token}`;
@@ -85,10 +93,8 @@ export const AuthProvider = ({ children }: any) => {
           authenticated: true,
         });
 
-        // Store token securely
         await SecureStore.setItemAsync(TOKEN_KEY, response.data.token);
 
-        // Set default authorization header
         axios.defaults.headers.common[
           "Authorization"
         ] = `Bearer ${response.data.token}`;
@@ -102,13 +108,10 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   const logout = async () => {
-    // Remove token from secure storage
     await SecureStore.deleteItemAsync(TOKEN_KEY);
 
-    // Reset axios authorization header
     axios.defaults.headers.common["Authorization"] = "";
 
-    // Update auth state
     setAuthState({
       token: null,
       authenticated: false,
@@ -124,3 +127,5 @@ export const AuthProvider = ({ children }: any) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export default AuthProvider;

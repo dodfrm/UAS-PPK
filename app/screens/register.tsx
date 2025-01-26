@@ -14,7 +14,7 @@ export default function register() {
   const router = useRouter();
   
     const navigateToLogin = () => {
-      router.push("/Auth/login"); 
+      router.push("/screens/login"); 
     };
   return (
     <View style={styles.container}>
