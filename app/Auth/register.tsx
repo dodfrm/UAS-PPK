@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import React from "react";
+import "../../global.css";
 
 export default function register() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function register() {
       {/* Top Image */}
       <View style={styles.topImageContainer}>
         <Image
-          source={require("../assets/images/topVector.png")}
+          source={require("../../assets/images/topVector.png")}
           style={styles.topImage}
         />
       </View>
@@ -28,7 +29,7 @@ export default function register() {
       {/* Welcome Section */}
       <View style={styles.helloContainer}>
         <Image
-          source={require("../assets/images/logo.png")}
+          source={require("../../assets/images/logo.png")}
           style={styles.logo}
         />
         <Text style={styles.signUpText}>Create your account</Text>
@@ -74,7 +75,7 @@ export default function register() {
 
       {/* Bottom Image */}
       <Image
-        source={require("../assets/images/bottom-wave.png")}
+        source={require("../../assets/images/bottom-wave.png")}
         style={styles.bottomImage}
       />
     </View>

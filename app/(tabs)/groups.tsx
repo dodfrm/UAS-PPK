@@ -1,13 +1,15 @@
-import { StyleSheet } from 'react-native'
-import { Text, View } from "@/components/Themed";
+import { StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform } from "react-native";
 import React from 'react'
 
 const groups = () => {
   return (
     <View>
-      <Text>groups</Text>
+      <Text className="pt-4 text-3xl text-center font-bold text-gray-900 dark:text-white">
+        groups
+      </Text>
     </View>
-  )
+  );
 }
 
 export default groups

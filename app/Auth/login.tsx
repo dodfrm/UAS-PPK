@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import "../../global.css";
 
 export default function login() {
 
@@ -21,7 +22,7 @@ export default function login() {
       {/* Top Image */}
       <View style={styles.topImageContainer}>
         <Image
-          source={require("../assets/images/topVector.png")}
+          source={require("../../assets/images/topVector.png")}
           style={styles.topImage}
         />
       </View>
@@ -29,7 +30,7 @@ export default function login() {
       {/* Welcome Section */}
       <View style={styles.helloContainer}>
         <Image
-          source={require("../assets/images/logo.png")}
+          source={require("../../assets/images/logo.png")}
           style={styles.logo}
         />
         <Text style={styles.signInText}>Sign in to your account</Text>
@@ -65,7 +66,7 @@ export default function login() {
 
       {/* Bottom Image */}
       <Image
-        source={require("../assets/images/bottom-wave.png")}
+        source={require("../../assets/images/bottom-wave.png")}
         style={styles.bottomImage}
       />
     </View>
