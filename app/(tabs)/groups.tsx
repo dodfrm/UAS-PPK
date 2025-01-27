@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  StyleSheet,
-  Text,
   View,
+  Text,
   FlatList,
   TouchableOpacity,
   useColorScheme,
@@ -14,94 +13,140 @@ interface Contact {
   phone: string;
   email: string;
   contactType: string;
-  contactOrganizations: {
-    id: number;
-    kelas: string;
-    jabatan: string;
-    periodeJabatan: string;
-  }[];
+}
+
+interface Organization {
+  id: number;
+  organizationName: string;
+  contacts: Contact[];
 }
 
 const groups = () => {
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const colorScheme = useColorScheme();
-  const [contactGroups, setContactGroups] = useState<{
-    [key: string]: Contact[];
-  }>({});
 
-  useEffect(() => {
-    const dummyData: Contact[] = [
-      {
-        id: 1,
-        fullName: "Dodi Firmansyah",
-        phone: "08123456789",
-        email: "222212572@stis.ac.id",
-        contactType: "MAHASISWA",
-        contactOrganizations: [
-          {
-            id: 1,
-            kelas: "3SI1",
-            jabatan: "KETUA",
-            periodeJabatan: "2024/2025",
-          },
-        ],
-      },
-      
-    ];
+  // Sample data
+  const organizations: Organization[] = [
+    {
+      id: 1,
+      organizationName: "Bulstik",
+      contacts: [
+        {
+          id: 1,
+          fullName: "John Doe",
+          phone: "+1 123-456-7890",
+          email: "john.doe@example.com",
+          contactType: "KETUA",
+        },
+        {
+          id: 2,
+          fullName: "Jane Doe",
+          phone: "+1 123-456-7890",
+          email: "john.doe@example.com",
+          contactType: "WAKIL KETUA",
+        },
+      ],
+    },
+    {
+      id: 2,
+      organizationName: "Bimbel",
+      contacts: [
+        {
+          id: 1,
+          fullName: "John Doe",
+          phone: "+1 123-456-7890",
+          email: "john.doe@example.com",
+          contactType: "KETUA",
+        },
+        {
+          id: 2,
+          fullName: "Jane Doe",
+          phone: "+1 123-456-7890",
+          email: "john.doe@example.com",
+          contactType: "WAKIL KETUA",
+        },
+      ],
+    },
+  ];
 
-    // Group by contact type
-    const typeGroups = dummyData.reduce((acc, contact) => {
-      const key = contact.contactType;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(contact);
-      return acc;
-    }, {} as { [key: string]: Contact[] });
-
-    // Group by jabatan
-    const jabatanGroups = dummyData.reduce((acc, contact) => {
-      const jabatan = contact.contactOrganizations[0]?.jabatan || "Unknown";
-      const key = `Jabatan: ${jabatan}`;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(contact);
-      return acc;
-    }, {} as { [key: string]: Contact[] });
-
-    setContactGroups({ ...typeGroups, ...jabatanGroups });
-  }, []);
-
-  const renderGroupHeader = (title: string) => (
-    <Text className="text-xl font-bold p-4 bg-gray-200 dark:bg-gray-700 text-black dark:text-white">
-      {title}
-    </Text>
-  );
-
-  const renderContactItem = ({ item }: { item: Contact }) => (
-    <TouchableOpacity className="p-4 border-b border-gray-200 dark:border-gray-700">
-      <Text className="text-lg font-semibold text-black dark:text-white">
-        {item.fullName}
-      </Text>
-      <Text className="text-gray-600 dark:text-gray-400">{item.phone}</Text>
+  const renderOrganizationItem = ({ item }: { item: Organization }) => (
+    <TouchableOpacity
+      onPress={() => setSelectedOrg(item)}
+      className="mt-3 flex-row items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+    >
+      <View className="h-14 w-14 rounded-full bg-blue-500 items-center justify-center mr-4">
+        <Text className="text-white text-xl font-bold">
+          {item.organizationName.charAt(0)}
+        </Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-xl font-semibold text-gray-900 dark:text-white">
+          {item.organizationName}
+        </Text>
+        <Text className="text-sm text-gray-500 dark:text-gray-400">
+          {item.contacts.length} members
+        </Text>
+      </View>
+      <Text className="text-gray-400 font-bold text-2xl pr-6">›</Text>
     </TouchableOpacity>
   );
 
-  return (
-    <View className="flex-1 bg-gray-100 dark:bg-black">
-      <Text className="pt-4 text-3xl text-center font-bold text-gray-900 dark:text-white">
-        Groups
-      </Text>
+  const renderContactItem = ({ item }: { item: Contact }) => (
+    <TouchableOpacity className="flex-row items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <View className="h-14 w-14 rounded-full bg-gray-300 dark:bg-gray-600 items-center justify-center mr-4">
+        <Text className="text-gray-600 dark:text-gray-300 text-xl font-semibold">
+          {item.fullName
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join("")}
+        </Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+          {item.fullName}
+        </Text>
+        <Text className="text-sm text-gray-500 dark:text-gray-400">
+          {item.contactType}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
+  if (selectedOrg) {
+    return (
+      <View className="flex-1 bg-gray-100 dark:bg-gray-900">
+        <View className="bg-white dark:bg-gray-800 p-4 flex-row items-center border-b border-gray-200 dark:border-gray-700">
+          <TouchableOpacity
+            onPress={() => setSelectedOrg(null)}
+            className="mr-4"
+          >
+            <Text className="text-blue-500 font-semibold text-lg">‹ Back</Text>
+          </TouchableOpacity>
+          <Text className="text-2xl pl-4 py-2 font-bold text-gray-900 dark:text-white">
+            {selectedOrg.organizationName}
+          </Text>
+        </View>
+        <FlatList
+          data={selectedOrg.contacts}
+          renderItem={renderContactItem}
+          keyExtractor={(item) => item.id.toString()}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 bg-gray-100 dark:bg-gray-900">
+      <View className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700">
+        <Text className="text-2xl py-2 font-bold text-center text-gray-900 dark:text-white">
+          Groups
+        </Text>
+      </View>
       <FlatList
-        data={Object.entries(contactGroups)}
-        keyExtractor={([title]) => title}
-        renderItem={({ item: [title, contacts] }) => (
-          <View>
-            {renderGroupHeader(title)}
-            <FlatList
-              data={contacts}
-              renderItem={renderContactItem}
-              keyExtractor={(contact) => contact.id.toString()}
-            />
-          </View>
-        )}
+        data={organizations}
+        renderItem={renderOrganizationItem}
+        keyExtractor={(item) => item.id.toString()}
       />
     </View>
   );

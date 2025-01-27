@@ -310,11 +310,11 @@ const ContactApp = () => {
   );
 
   return (
-    <View className="flex-1 p-4 bg-gray-100 dark:bg-black">
+    <View className="flex-1 p-4 bg-gray-100 dark:bg-gray-900">
       {/* Search Bar */}
       <View className="flex-row items-center rounded-3xl mb-4 px-3 py-3">
         <TextInput
-          className="flex-1 text-black text-lg pl-4 dark:text-white bg-white dark:bg-gray-800 border border-gray-700 rounded-3xl"
+          className="flex-1 text-black text-lg pl-4 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl"
           placeholder="Search contacts..."
           placeholderTextColor={colorScheme === "dark" ? "#888" : "#000000"}
           value={searchTerm}
