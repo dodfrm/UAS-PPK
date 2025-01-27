@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { useAuth } from "../../Auth/authContext";
 
 interface User {
   name: string;
@@ -15,6 +16,13 @@ interface User {
 }
 
 const ProfileScreen = () => {
+  const { onLogout } = useAuth();
+
+  const handleLogout = () => {
+    onLogout();
+    Alert.alert("Logout", "You have been logged out");
+  };
+
   // User data state
   const [user, setUser] = useState<User>({
     name: "John Doe",
@@ -27,6 +35,7 @@ const ProfileScreen = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleSave = () => {
     if (editField === "name") {
@@ -43,6 +52,7 @@ const ProfileScreen = () => {
     setEditField(field);
   };
 
+  
   return (
     <ScrollView className="flex-1 bg-gray-100 dark:bg-gray-900">
       {/* Profile Header */}
@@ -112,6 +122,14 @@ const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Logout Button */}
+      <TouchableOpacity
+        onPress={() => setShowLogoutModal(true)}
+        className="bg-white dark:bg-gray-800 p-4 rounded-lg items-center justify-center"
+      >
+        <Text className="text-lg text-gray-900 dark:text-white">Logout</Text>
+      </TouchableOpacity>
+
       {/* Edit Field Modal */}
       <Modal
         visible={editField !== null}
@@ -146,7 +164,7 @@ const ProfileScreen = () => {
                   onPress={() => setEditField(null)}
                   className="flex-1 bg-gray-200 dark:bg-gray-700 p-3 rounded-xl"
                 >
-                  <Text className="text-center text-gray-900 dark:text-white">
+                  <Text className="font-semibold text-center text-gray-900 dark:text-white">
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -155,7 +173,9 @@ const ProfileScreen = () => {
                   onPress={handleSave}
                   className="flex-1 bg-blue-500 p-3 rounded-xl"
                 >
-                  <Text className="text-center text-white">Save</Text>
+                  <Text className="font-semibold text-center text-white">
+                    Save
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -199,7 +219,7 @@ const ProfileScreen = () => {
                   onPress={() => setShowPasswordModal(false)}
                   className="flex-1 bg-gray-200 dark:bg-gray-700 p-3 rounded-xl"
                 >
-                  <Text className="text-center text-gray-900 dark:text-white">
+                  <Text className="font-semibold text-center text-gray-900 dark:text-white">
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -211,7 +231,9 @@ const ProfileScreen = () => {
                   }}
                   className="flex-1 bg-blue-500 p-3 rounded-xl"
                 >
-                  <Text className="text-center text-white">Update</Text>
+                  <Text className="font-semibold text-center text-white">
+                    Update
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -248,7 +270,7 @@ const ProfileScreen = () => {
                   onPress={() => setShowDeleteModal(false)}
                   className="flex-1 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg"
                 >
-                  <Text className="text-center text-gray-900 dark:text-white">
+                  <Text className="font-semibold text-center text-gray-900 dark:text-white">
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -263,7 +285,49 @@ const ProfileScreen = () => {
                   }}
                   className="flex-1 bg-red-500 p-3 rounded-lg"
                 >
-                  <Text className="text-center text-white">Delete</Text>
+                  <Text className="font-semibold text-center text-white">
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Logout Modal */}
+      <Modal visible={showLogoutModal} animationType="fade" transparent={true}>
+        <View className="flex-1 justify-center bg-black/50 px-4">
+          <View className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3">
+            <View className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <Text className="text-xl font-semibold text-gray-900 dark:text-white">
+                Logout
+              </Text>
+            </View>
+
+            <View className="p-4 mt-4">
+              <Text className="text-xl text-gray-600 dark:text-gray-400 mb-4">
+                Are you sure you want to logout?
+              </Text>
+              <View className="flex-row gap-6 mt-4">
+                <TouchableOpacity
+                  onPress={() => setShowLogoutModal(false)}
+                  className="flex-1 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg"
+                >
+                  <Text className="font-semibold text-center text-gray-900 dark:text-white">
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowLogoutModal(false);
+                    handleLogout();
+                  }}
+                  className="flex-1 bg-blue-500 p-3 rounded-lg"
+                >
+                  <Text className="font-semibold text-center text-white">
+                    Logout
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

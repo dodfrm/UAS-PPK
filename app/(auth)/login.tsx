@@ -1,3 +1,5 @@
+import React, { useState } from "react";
+import { useRouter } from "expo-router";
 import {
   Image,
   StyleSheet,
@@ -5,19 +7,40 @@ import {
   TouchableOpacity,
   Text,
   View,
+  Alert,
+  KeyboardAvoidingView,
 } from "react-native";
-import { useRouter } from "expo-router";
-import React from "react";
+import { useAuth } from "../../Auth/authContext";
 import "../../global.css";
 
-export default function register() {
+export default function Login() {
   const router = useRouter();
-  
-    const navigateToLogin = () => {
-      router.push("/screens/login"); 
-    };
+  const { onLogin } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const navigateToRegister = () => {
+    router.push("/(auth)/register");
+  };
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password");
+      return;
+    }
+
+    try {
+      const result = await onLogin(email, password);
+      // Navigate to main app or home screen
+      router.replace("/(tabs)");
+    } catch (error) {
+      Alert.alert("Login Failed", "Invalid credentials. Please try again.");
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container}>
       {/* Top Image */}
       <View style={styles.topImageContainer}>
         <Image
@@ -32,44 +55,40 @@ export default function register() {
           source={require("../../assets/images/logo.png")}
           style={styles.logo}
         />
-        <Text style={styles.signUpText}>Create your account</Text>
+        <Text style={styles.signInText}>Sign in to your account</Text>
       </View>
 
       {/* Input Fields */}
       <View style={styles.inputContainer}>
         <TextInput
-          placeholder="Full Name"
+          placeholder="Email or Username"
           placeholderTextColor="#A9A9A9"
           style={styles.input}
-        />
-        <TextInput
-          placeholder="Email"
-          placeholderTextColor="#A9A9A9"
-          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
         <TextInput
           placeholder="Password"
           placeholderTextColor="#A9A9A9"
           secureTextEntry
           style={styles.input}
+          value={password}
+          onChangeText={setPassword}
         />
-        <TextInput
-          placeholder="Confirm Password"
-          placeholderTextColor="#A9A9A9"
-          secureTextEntry
-          style={styles.input}
-        />
+        <TouchableOpacity>
+          <Text style={styles.forgotPassword}>Forgot Password?</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Register Button */}
+      {/* Sign In Button */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.signUpButton}>
-          <Text style={styles.signUpButtonText}>Register</Text>
+        <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
+          <Text style={styles.signInButtonText}>Sign In</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={navigateToLogin}>
-          <Text style={styles.backToLogin}>
-            Already have an account? Sign In
-          </Text>
+        <TouchableOpacity onPress={navigateToRegister}>
+          <Text style={styles.register}>Dont have an account? Register</Text>
         </TouchableOpacity>
       </View>
 
@@ -78,7 +97,7 @@ export default function register() {
         source={require("../../assets/images/bottom-wave.png")}
         style={styles.bottomImage}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -102,13 +121,14 @@ const styles = StyleSheet.create({
   },
   bottomImage: {
     width: "100%",
-    height: 190,
+    marginTop: 120,
+    height: 200,
   },
   helloContainer: {
     alignItems: "center",
     marginVertical: 20,
   },
-  signUpText: {
+  signInText: {
     textAlign: "center",
     fontSize: 18,
     color: "#6A6A6A",
@@ -123,16 +143,29 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
     borderRadius: 10,
     padding: 15,
-    marginBottom: 15,
+    marginTop: 16,
     backgroundColor: "#FFFFFF",
     fontSize: 16,
     color: "#262626",
+  },
+  forgotPassword: {
+    textAlign: "left",
+    color: "#007BFF",
+    fontSize: 14,
+    marginLeft: 5,
+    marginTop: 5,
+  },
+  register: {
+    textAlign: "center",
+    color: "#007BFF",
+    fontSize: 14,
+    marginTop: 15,
   },
   buttonContainer: {
     paddingHorizontal: 20,
     marginTop: 20,
   },
-  signUpButton: {
+  signInButton: {
     backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 10,
@@ -143,15 +176,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  signUpButtonText: {
+  signInButtonText: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
-  },
-  backToLogin: {
-    textAlign: "center",
-    color: "#007BFF",
-    fontSize: 14,
-    marginTop: 15,
   },
 });
