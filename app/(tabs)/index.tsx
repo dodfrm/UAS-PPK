@@ -45,6 +45,7 @@ const ContactApp = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [modal, setModal] = useState(false);
   const scaleValue = useRef(new Animated.Value(0)).current;
@@ -61,6 +62,11 @@ const ContactApp = () => {
   const toggleModal = () => {
     if (modal) {
       setModal(false);
+      setFullName("");
+      setPhone("");
+      setEmail("");
+      setContactType("DOSEN");
+      setSelectedContact(null); // Reset selected contact
       Animated.spring(scaleValue, {
         toValue: 0,
         useNativeDriver: true,
@@ -118,10 +124,18 @@ const ContactApp = () => {
       setUniqueJabatan(Array.from(jabatan));
       setUniqueContactTypes(Array.from(contactTypes));
     } catch (error) {
-      console.error("Failed to fetch contacts:", error);
+    let errorMessage = "An unexpected error occurred";
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = String(error);
+    }
+    Alert.alert("Failed to fetch contacts:", errorMessage);
     }
   };
 
+  // Handle Search Kontak
   const handleSearch = (text: string) => {
     setSearchTerm(text);
     applyFilters(text);
@@ -157,6 +171,72 @@ const ContactApp = () => {
       }
     } catch (error) {
       Alert.alert("Error", "Failed to add contact. Please try again later.");
+    }
+  };
+
+  // Handle edit Contact
+  const handleEditContact = (contact: Contact) => {
+    setFullName(contact.fullName);
+    setPhone(contact.phone);
+    setEmail(contact.email);
+    setContactType(contact.contactType);
+    setModalVisible(false); // Tutup modal detail
+    toggleModal(); // Buka modal edit
+  };
+
+  // Handle Delete Contact
+  const handleDeleteContact = async (contactId: number) => {
+    try {
+      const response = await axios.delete(
+        `${API_URL}/api/contacts/${contactId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authState?.accessToken}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        fetchContacts(); // Refresh daftar kontak
+        setModalVisible(false); // Tutup modal detail
+        Alert.alert("Success", "Contact deleted successfully!");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete contact. Please try again later.");
+    }
+  };
+
+  // handle update contact
+  const handleUpdateContact = async (contactId: number) => {
+    try {
+      const response = await axios.put(
+        `${API_URL}/api/contacts/${contactId}`,
+        {
+          fullName,
+          phone,
+          email,
+          contactType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authState?.accessToken}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        fetchContacts(); // Refresh daftar kontak
+        Alert.alert("Success", "Contact updated successfully!");
+        toggleModal();
+        // Clear form fields
+        setFullName("");
+        setPhone("");
+        setEmail("");
+        setContactType("DOSEN");
+        setSelectedContact(null); // Reset selected contact
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to update contact. Please try again later.");
     }
   };
 
@@ -345,27 +425,43 @@ const ContactApp = () => {
       />
 
       {/* Floating action button */}
-      <TouchableOpacity
-        onPress={toggleModal}
-        className="absolute bottom-6 right-6"
-      >
-        <Animated.View
-          className="w-16 h-16 bg-blue-500 rounded-full items-center justify-center shadow-lg"
-          style={{
-            transform: [
-              {
-                scale: scaleValue.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 0.9],
-                }),
-              },
-            ],
-          }}
+      {authState?.user?.role === "ROLE_ADMIN" && (
+        <TouchableOpacity
+          onPress={toggleModal}
+          style={{ position: "absolute", bottom: 24, right: 24 }}
         >
-          <Feather name="plus" size={24} color="white" />
-        </Animated.View>
-      </TouchableOpacity>
-
+          <Animated.View
+            style={[
+              {
+                width: 64,
+                height: 64,
+                backgroundColor: "#3B82F6",
+                borderRadius: 32,
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                transform: [
+                  {
+                    scale: scaleValue.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.9],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Feather name="plus" size={24} color="white" />
+          </Animated.View>
+        </TouchableOpacity>
+      )}
       {/* Add Contact Form */}
       <Modal
         animationType="fade"
@@ -389,7 +485,7 @@ const ContactApp = () => {
           >
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-bold text-black dark:text-white">
-                Add Contact
+                {selectedContact ? "Edit Contact" : "Add Contact"}
               </Text>
               <TouchableOpacity onPress={toggleModal} className="p-2">
                 <Feather name="x" size={24} color="gray" />
@@ -486,11 +582,17 @@ const ContactApp = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
-                  handleSave();
+                  if (selectedContact) {
+                    handleUpdateContact(selectedContact.id);
+                  } else {
+                    handleSave();
+                  }
                 }}
                 className="flex-1 bg-blue-500 p-3 rounded-xl"
               >
-                <Text className="text-center text-white">Save</Text>
+                <Text className="text-center text-white">
+                  {selectedContact ? "Update" : "Save"}
+                </Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -518,7 +620,7 @@ const ContactApp = () => {
               />
             </TouchableOpacity>
 
-            {selectedContact && (
+            {selectedContact ? (
               <View className="mt-8">
                 <View className="items-center mb-6">
                   <View className="w-24 h-24 bg-blue-200 rounded-full items-center justify-center">
@@ -562,7 +664,7 @@ const ContactApp = () => {
                     </Text>
                   </View>
 
-                  {selectedContact.contactOrganizations.map((org) => (
+                  {selectedContact.contactOrganizations?.map((org) => (
                     <View key={org.id} className="flex-row items-center mb-3">
                       <Feather
                         name="users"
@@ -591,12 +693,80 @@ const ContactApp = () => {
                     </View>
                   ))}
                 </View>
+
+                {/* Tombol Edit dan Delete untuk Admin */}
+                {authState?.user?.role === "ROLE_ADMIN" && (
+                  <View className="flex-row justify-around mt-6">
+                    <TouchableOpacity
+                      onPress={() => handleEditContact(selectedContact)}
+                      className="bg-blue-500 p-3 px-12 rounded-xl"
+                    >
+                      <Text className="text-white">Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setShowDeleteModal(true)}
+                      className="bg-red-500 p-3 px-12 rounded-xl"
+                    >
+                      <Text className="text-white">Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View className="flex-1 justify-center items-center">
+                <Text className="text-lg text-gray-600 dark:text-gray-300">
+                  No contact selected
+                </Text>
               </View>
             )}
           </View>
         </View>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal && selectedContact !== null}
+        animationType="fade"
+        transparent={true}
+      >
+        <View className="flex-1 justify-center bg-black/50 px-4">
+          <View className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3">
+            <View className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <Text className="text-xl font-semibold text-gray-900 dark:text-white">
+                Delete Contact
+              </Text>
+            </View>
+            <View className="p-4 mt-4">
+              <Text className="text-xl text-gray-600 dark:text-gray-400 mb-4">
+                Are you sure you want to delete {selectedContact?.fullName}?
+              </Text>
+              <View className="flex-row gap-6 mt-4">
+                <TouchableOpacity
+                  onPress={() => setShowDeleteModal(false)}
+                  className="flex-1 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg"
+                >
+                  <Text className="font-semibold text-center text-gray-900 dark:text-white">
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (selectedContact) {
+                      handleDeleteContact(selectedContact.id);
+                      setShowDeleteModal(false);
+                    }
+                  }}
+                  className="flex-1 bg-red-500 p-3 rounded-lg"
+                >
+                  <Text className="font-semibold text-center text-white">
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
       {/* Filter Modal */}
       <Modal
         animationType="slide"

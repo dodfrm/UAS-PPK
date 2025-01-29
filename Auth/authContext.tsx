@@ -8,6 +8,13 @@ interface AuthProps {
     authenticated: boolean | null;
     user: User | null;
   };
+  setAuthState: React.Dispatch<
+    React.SetStateAction<{
+      accessToken: string | null;
+      authenticated: boolean | null;
+      user: User | null;
+    }>
+  >;
   onRegister: (name: string, email: string, password: string) => Promise<any>;
   onLogin: (email: string, password: string) => Promise<any>;
   onLogout: () => Promise<any>;
@@ -33,6 +40,7 @@ export const API_URL = "http://192.168.1.11:8080";
 
 export const AuthContext = createContext<AuthProps>({
   authState: { accessToken: null, authenticated: null, user: null },
+  setAuthState: () => {},
   onRegister: async () => {},
   onLogin: async () => {},
   onLogout: async () => {},
@@ -234,6 +242,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const value = {
     authState,
+    setAuthState,
     onRegister: register,
     onLogin: login,
     onLogout: logout,

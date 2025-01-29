@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import { useAuth, API_URL } from "@/Auth/authContext";
+import { useColorScheme } from "@/components/useColorScheme";
 import { Picker } from "@react-native-picker/picker";
 
 // interface Contact
@@ -49,6 +50,7 @@ interface ContactAssignment {
 }
 
 const Groups = () => {
+  const colorScheme = useColorScheme();
   const { authState } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -357,9 +359,11 @@ const Groups = () => {
           <Text className="text-2xl pl-4 py-2 font-bold text-gray-900 dark:text-white">
             {selectedOrg.organizationName}
           </Text>
-          <TouchableOpacity onPress={toggleDeleteModal} className="ml-auto">
-            <Text className="text-red-500 font-semibold text-lg">Delete</Text>
-          </TouchableOpacity>
+          {authState?.user?.role === "ROLE_ADMIN" && (
+            <TouchableOpacity onPress={toggleDeleteModal} className="ml-auto">
+              <Text className="text-red-500 font-semibold text-lg">Delete</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <FlatList
           className="mt-3"
@@ -372,17 +376,38 @@ const Groups = () => {
             </Text>
           }
         />
-
         {/* Floating action button for adding contacts */}
-        <TouchableOpacity
-          onPress={toggleContactAssignmentModal}
-          className="absolute bottom-6 right-6"
-        >
-          <Animated.View className="w-16 h-16 bg-blue-500 border border-gray-300 dark:border-gray-600 rounded-full items-center justify-center shadow-lg">
-            <Feather name="user-plus" size={24} color="white" />
-          </Animated.View>
-        </TouchableOpacity>
-
+        {authState?.user?.role === "ROLE_ADMIN" && (
+          <TouchableOpacity
+            onPress={toggleContactAssignmentModal}
+            style={{
+              position: "absolute",
+              bottom: 24,
+              right: 24,
+            }}
+          >
+            <Animated.View
+              style={{
+                width: 64,
+                height: 64,
+                backgroundColor: "#3B82F6",
+                borderRadius: 32,
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: {
+                  width: 0,
+                  height: 4,
+                },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
+            >
+              <Feather name="user-plus" size={24} color="white" />
+            </Animated.View>
+          </TouchableOpacity>
+        )}
         {/* Contact Assignment Modal */}
         <Modal
           animationType="fade"
@@ -485,7 +510,6 @@ const Groups = () => {
             </View>
           </View>
         </Modal>
-
         {/* Delete Organization Modal */}
         <Modal
           visible={showDeleteModal}
@@ -550,27 +574,43 @@ const Groups = () => {
       />
 
       {/* Floating action button */}
-      <TouchableOpacity
-        onPress={toggleModal}
-        className="absolute bottom-6 right-6"
-      >
-        <Animated.View
-          className="w-16 h-16 bg-blue-500 rounded-full items-center justify-center shadow-lg"
-          style={{
-            transform: [
-              {
-                scale: scaleValue.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 0.9],
-                }),
-              },
-            ],
-          }}
+      {authState?.user?.role === "ROLE_ADMIN" && (
+        <TouchableOpacity
+          onPress={toggleModal}
+          style={{ position: "absolute", bottom: 24, right: 24 }}
         >
-          <Feather name="plus" size={24} color="white" />
-        </Animated.View>
-      </TouchableOpacity>
-
+          <Animated.View
+            style={[
+              {
+                width: 64,
+                height: 64,
+                backgroundColor: "#3B82F6",
+                borderRadius: 32,
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                transform: [
+                  {
+                    scale: scaleValue.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.9],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Feather name="plus" size={24} color="white" />
+          </Animated.View>
+        </TouchableOpacity>
+      )}
       {/* Add Organization Modal */}
       <Modal
         animationType="fade"

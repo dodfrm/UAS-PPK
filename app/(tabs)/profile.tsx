@@ -1,4 +1,4 @@
-import React, {useState } from "react";
+import React, {useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { useAuth , API_URL} from "../../Auth/authContext";
+import { useAuth, API_URL } from "../../Auth/authContext";
 import axios from "axios";
 
 interface User {
@@ -19,7 +19,7 @@ interface User {
 }
 
 const ProfileScreen = () => {
-  const { onLogout, authState } = useAuth();
+  const { onLogout, authState, setAuthState } = useAuth();
 
   //handle logout
   const handleLogout = () => {
@@ -36,38 +36,58 @@ const ProfileScreen = () => {
   const [oldPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [userData, setUserData] = useState<{
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  } | null>(null);
 
+  // Fetch data
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/user-profile`, {
+        headers: {
+          Authorization: `Bearer ${authState?.accessToken}`,
+        },
+      });
+      setUserData(response.data);
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch user data");
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
   // Update Profile
   const handleSave = async () => {
     try {
-      if (!authState?.user?.id || !editField || !editValue.trim()) {
+      if (!userData?.id || !editField || !editValue.trim()) {
         Alert.alert("Error", "Field cannot be empty");
         return;
       }
 
       const updatedData = {
-        id: authState?.user?.id,
-        name: editField === "name" ? editValue : authState?.user?.name,
-        email: editField === "email" ? editValue : authState?.user?.email,
-        role: authState?.user?.role,
+        id: userData.id,
+        name: editField === "name" ? editValue : userData.name,
+        email: editField === "email" ? editValue : userData.email,
+        role: userData.role,
       };
 
-      await axios.put(
-        `${API_URL}/user-profile/${authState.user.id}`,
-        updatedData,
-        {
-          headers: {
-            Authorization: `Bearer ${authState?.accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await axios.put(`${API_URL}/user-profile/${userData.id}`, updatedData, {
+        headers: {
+          Authorization: `Bearer ${authState?.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
+      // Update 
+      fetchUserData();
       setEditField(null);
       Alert.alert("Success", "Profile updated successfully");
     } catch (error) {
-      console.error("Error updating profile:", error);
-      Alert.alert("Error, Failed to update profile");
+      Alert.alert("Error", "Failed to update profile");
     }
   };
 
@@ -75,10 +95,10 @@ const ProfileScreen = () => {
   // Ubah Password
   const handlePasswordChange = async () => {
     try {
-      if (!authState?.user?.id) return;
+      if (!userData?.id) return;
 
       await axios.put(
-        `${API_URL}/user/change-password/${authState.user.id}`,
+        `${API_URL}/user/change-password/${userData.id}`,
         {
           oldPassword,
           newPassword,
@@ -94,7 +114,6 @@ const ProfileScreen = () => {
       setNewPassword("");
       Alert.alert("Success", "Password updated successfully");
     } catch (error) {
-      console.error("Error changing password:", error);
       Alert.alert("Error", "Failed to update password");
     }
   };
@@ -102,10 +121,10 @@ const ProfileScreen = () => {
   // Hapus Akun
   const handleDeleteAccount = async () => {
     try {
-      if (!authState?.user?.id) return;
+      if (!userData?.id) return;
 
       const response = await axios.delete(
-        `${API_URL}/user/${authState.user.id}`,
+        `${API_URL}/user/${userData.id}`,
         {
           headers: {
             Authorization: `Bearer ${authState?.accessToken}`,
@@ -118,14 +137,13 @@ const ProfileScreen = () => {
       onLogout();
       Alert.alert("Account Deleted", response.data);
     } catch (error) {
-      console.error("Error deleting account:", error);
       Alert.alert("Error Failed to delete account");
     }
   };
 
 
   const openEdit = (field: "name" | "email") => {
-    setEditValue(authState?.user?.[field] ?? "");
+    setEditValue(userData?.[field] ?? "");
     setEditField(field);
   };
 
@@ -136,7 +154,7 @@ const ProfileScreen = () => {
         <View className="items-center py-4">
           <View className="h-24 w-24 rounded-full bg-blue-500 items-center justify-center mb-4">
             <Text className="text-white text-3xl font-bold">
-              {authState?.user?.name
+              {userData?.name
                 .split(" ")
                 .map((word) => word.charAt(0).toUpperCase())
                 .slice(0, 2)
@@ -157,7 +175,7 @@ const ProfileScreen = () => {
               Name
             </Text>
             <Text className="text-lg text-gray-900 dark:text-white">
-              {authState?.user?.name}
+              {userData?.name}
             </Text>
           </View>
           <Text className="text-blue-500 pr-3">Edit</Text>
@@ -172,7 +190,7 @@ const ProfileScreen = () => {
               Email
             </Text>
             <Text className="text-lg text-gray-900 dark:text-white">
-              {authState?.user?.email}
+              {userData?.email}
             </Text>
           </View>
           <Text className="text-blue-500 pr-3">Edit</Text>
