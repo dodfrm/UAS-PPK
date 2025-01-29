@@ -42,7 +42,7 @@ export default function register() {
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@stis\.ac\.id$/;
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!emailRegex.test(formData.email)) {
@@ -52,8 +52,8 @@ export default function register() {
     // Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
     }
 
     // Confirm password validation
@@ -67,6 +67,7 @@ export default function register() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Register function
   const handleRegister = async () => {
     if (!validateForm()) {
       return;

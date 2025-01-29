@@ -3,7 +3,11 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 interface AuthProps {
-  authState?: { token: string | null; authenticated: boolean | null };
+  authState?: {
+    accessToken: string | null;
+    authenticated: boolean | null;
+    user: User | null;
+  };
   onRegister: (name: string, email: string, password: string) => Promise<any>;
   onLogin: (email: string, password: string) => Promise<any>;
   onLogout: () => Promise<any>;
@@ -16,11 +20,19 @@ interface User {
   role: string;
 }
 
+// Interface untuk decoded token dari Spring Boot JWT
+interface JwtPayload {
+  sub: string; // biasanya berisi username/email
+  roles?: string[];
+  exp: number;
+  // sesuaikan dengan claims yang ada di JWT Anda
+}
+
 const TOKEN_KEY = "jwtoken";
-export const API_URL = "https://reqres.in";
+export const API_URL = "http://192.168.1.11:8080";
 
 export const AuthContext = createContext<AuthProps>({
-  authState: { token: null, authenticated: null },
+  authState: { accessToken: null, authenticated: null, user: null },
   onRegister: async () => {},
   onLogin: async () => {},
   onLogout: async () => {},
@@ -38,43 +50,71 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [authState, setAuthState] = useState<{
-    token: string | null;
+    accessToken: string | null;
     authenticated: boolean | null;
+    user: User | null;
   }>({
-    token: null,
+    accessToken: null,
     authenticated: null,
+    user: null,
   });
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        await loadToken();
-      } catch (error) {
-        console.error("Error loading token:", error);
-        setAuthState({
-          token: null,
-          authenticated: false,
-        });
-      }
-    };
+  // Fungsi untuk mendecode base64 dari token JWT
+  const parseJwt = (token: string) => {
+    try {
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map(function (c) {
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+          })
+          .join("")
+      );
 
-    initializeAuth();
-  }, []);
+      return JSON.parse(jsonPayload) as JwtPayload;
+    } catch (error) {
+      console.error("Error parsing JWT:", error);
+      return null;
+    }
+  };
 
   const loadToken = async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      const accessToken = await SecureStore.getItemAsync(TOKEN_KEY);
 
-      if (token) {
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        setAuthState({
-          token: token,
-          authenticated: true,
-        });
+      if (accessToken) {
+        // Set token di header axios
+        axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${accessToken}`;
+
+        try {
+          // Ambil data user dari endpoint /user-profile
+          const userResponse = await axios.get(`${API_URL}/user-profile`);
+          const user = userResponse.data;
+
+          setAuthState({
+            accessToken: accessToken,
+            authenticated: true,
+            user: user,
+          });
+        } catch (error) {
+          // Jika token expired atau invalid, hapus token dan set authenticated false
+          console.error("Error fetching user data:", error);
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          setAuthState({
+            accessToken: null,
+            authenticated: false,
+            user: null,
+          });
+        }
       } else {
         setAuthState({
-          token: null,
+          accessToken: null,
           authenticated: false,
+          user: null,
         });
       }
     } catch (error) {
@@ -83,24 +123,48 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const register = async (email: string, password: string) => {
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        await loadToken();
+      } catch (error) {
+        console.error("Error loading token:", error);
+        setAuthState({
+          accessToken: null,
+          authenticated: false,
+          user: null,
+        });
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  // register function
+  const register = async (name: string, email: string, password: string) => {
     try {
-      const response = await axios.post(`${API_URL}/api/register`, {
+      const response = await axios.post(`${API_URL}/register`, {
+        name,
         email,
         password,
       });
 
-      if (response.data.token) {
+      if (response.data.accessToken) {
         try {
-          await SecureStore.setItemAsync(TOKEN_KEY, response.data.token);
+          await SecureStore.setItemAsync(TOKEN_KEY, response.data.accessToken);
 
           axios.defaults.headers.common[
             "Authorization"
-          ] = `Bearer ${response.data.token}`;
+          ] = `Bearer ${response.data.accessToken}`;
+
+          // Ambil data user setelah register
+          const userResponse = await axios.get(`${API_URL}/user-profile`);
+          const user = userResponse.data;
 
           setAuthState({
-            token: response.data.token,
+            accessToken: response.data.accessToken,
             authenticated: true,
+            user: user,
           });
 
           return response.data;
@@ -115,24 +179,30 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Login function
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post(`${API_URL}/api/login`, {
+      const response = await axios.post(`${API_URL}/login`, {
         email,
         password,
       });
 
-      if (response.data.token) {
+      if (response.data.accessToken) {
         try {
-          await SecureStore.setItemAsync(TOKEN_KEY, response.data.token);
+          await SecureStore.setItemAsync(TOKEN_KEY, response.data.accessToken);
 
           axios.defaults.headers.common[
             "Authorization"
-          ] = `Bearer ${response.data.token}`;
+          ] = `Bearer ${response.data.accessToken}`;
+
+          // Ambil data user setelah login
+          const userResponse = await axios.get(`${API_URL}/user-profile`);
+          const user = userResponse.data;
 
           setAuthState({
-            token: response.data.token,
+            accessToken: response.data.accessToken,
             authenticated: true,
+            user: user,
           });
 
           return response.data;
@@ -150,12 +220,11 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = async () => {
     try {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
-
       axios.defaults.headers.common["Authorization"] = "";
-
       setAuthState({
-        token: null,
+        accessToken: null,
         authenticated: false,
+        user: null,
       });
     } catch (error) {
       console.error("Logout error:", error);

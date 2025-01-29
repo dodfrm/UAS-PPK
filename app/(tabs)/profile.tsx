@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useState } from "react";
 import {
   View,
   Text,
@@ -8,26 +8,24 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { useAuth } from "../../Auth/authContext";
+import { useAuth , API_URL} from "../../Auth/authContext";
+import axios from "axios";
 
 interface User {
+  id: number;
   name: string;
   email: string;
+  role: string;
 }
 
 const ProfileScreen = () => {
-  const { onLogout } = useAuth();
+  const { onLogout, authState } = useAuth();
 
+  //handle logout
   const handleLogout = () => {
     onLogout();
     Alert.alert("Logout", "You have been logged out");
   };
-
-  // User data state
-  const [user, setUser] = useState<User>({
-    name: "John Doe",
-    email: "john.doe@example.com",
-  });
 
   // Modal states
   const [editField, setEditField] = useState<"name" | "email" | null>(null);
@@ -35,24 +33,102 @@ const ProfileScreen = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
+  const [oldPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleSave = () => {
-    if (editField === "name") {
-      setUser({ ...user, name: editValue });
-    } else if (editField === "email") {
-      setUser({ ...user, email: editValue });
+  // Update Profile
+  const handleSave = async () => {
+    try {
+      if (!authState?.user?.id || !editField || !editValue.trim()) {
+        Alert.alert("Error", "Field cannot be empty");
+        return;
+      }
+
+      const updatedData = {
+        id: authState?.user?.id,
+        name: editField === "name" ? editValue : authState?.user?.name,
+        email: editField === "email" ? editValue : authState?.user?.email,
+        role: authState?.user?.role,
+      };
+
+      await axios.put(
+        `${API_URL}/user-profile/${authState.user.id}`,
+        updatedData,
+        {
+          headers: {
+            Authorization: `Bearer ${authState?.accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setEditField(null);
+      Alert.alert("Success", "Profile updated successfully");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      Alert.alert("Error, Failed to update profile");
     }
-    setEditField(null);
-    Alert.alert("Success", "Profile updated successfully");
   };
 
+
+  // Ubah Password
+  const handlePasswordChange = async () => {
+    try {
+      if (!authState?.user?.id) return;
+
+      await axios.put(
+        `${API_URL}/user/change-password/${authState.user.id}`,
+        {
+          oldPassword,
+          newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authState?.accessToken}`,
+          },
+        }
+      );
+      setShowPasswordModal(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      Alert.alert("Success", "Password updated successfully");
+    } catch (error) {
+      console.error("Error changing password:", error);
+      Alert.alert("Error", "Failed to update password");
+    }
+  };
+
+  // Hapus Akun
+  const handleDeleteAccount = async () => {
+    try {
+      if (!authState?.user?.id) return;
+
+      const response = await axios.delete(
+        `${API_URL}/user/${authState.user.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authState?.accessToken}`,
+            "Content-Type": "application/json",
+          },
+          data: { password },
+        }
+      );
+
+      onLogout();
+      Alert.alert("Account Deleted", response.data);
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      Alert.alert("Error Failed to delete account");
+    }
+  };
+
+
   const openEdit = (field: "name" | "email") => {
-    setEditValue(user[field]);
+    setEditValue(authState?.user?.[field] ?? "");
     setEditField(field);
   };
 
-  
   return (
     <ScrollView className="flex-1 bg-gray-100 dark:bg-gray-900">
       {/* Profile Header */}
@@ -60,7 +136,7 @@ const ProfileScreen = () => {
         <View className="items-center py-4">
           <View className="h-24 w-24 rounded-full bg-blue-500 items-center justify-center mb-4">
             <Text className="text-white text-3xl font-bold">
-              {user.name
+              {authState?.user?.name
                 .split(" ")
                 .map((word) => word.charAt(0).toUpperCase())
                 .slice(0, 2)
@@ -81,7 +157,7 @@ const ProfileScreen = () => {
               Name
             </Text>
             <Text className="text-lg text-gray-900 dark:text-white">
-              {user.name}
+              {authState?.user?.name}
             </Text>
           </View>
           <Text className="text-blue-500 pr-3">Edit</Text>
@@ -96,7 +172,7 @@ const ProfileScreen = () => {
               Email
             </Text>
             <Text className="text-lg text-gray-900 dark:text-white">
-              {user.email}
+              {authState?.user?.email}
             </Text>
           </View>
           <Text className="text-blue-500 pr-3">Edit</Text>
@@ -200,8 +276,8 @@ const ProfileScreen = () => {
             <View className="p-4 mt-4">
               <TextInput
                 className="border text-lg border-gray-300 dark:border-gray-600 p-3 rounded-xl mb-4 text-gray-900 dark:text-white"
-                value={password}
-                onChangeText={setPassword}
+                value={oldPassword}
+                onChangeText={setCurrentPassword}
                 placeholder="Current password"
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry
@@ -209,6 +285,8 @@ const ProfileScreen = () => {
 
               <TextInput
                 className="border text-lg border-gray-300 dark:border-gray-600 p-3 rounded-xl mb-4 text-gray-900 dark:text-white"
+                value={newPassword}
+                onChangeText={setNewPassword}
                 placeholder="New password"
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry
@@ -225,10 +303,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => {
-                    setShowPasswordModal(false);
-                    Alert.alert("Success", "Password updated successfully");
-                  }}
+                  onPress={handlePasswordChange}
                   className="flex-1 bg-blue-500 p-3 rounded-xl"
                 >
                   <Text className="font-semibold text-center text-white">
@@ -245,7 +320,7 @@ const ProfileScreen = () => {
       <Modal visible={showDeleteModal} animationType="fade" transparent={true}>
         <View className="flex-1 justify-center bg-black/50 px-4">
           <View className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3">
-            <View className="p-4 border-b border-gray-200 dark:border-gray-700 ">
+            <View className="p-4 border-b border-gray-200 dark:border-gray-700">
               <Text className="text-xl font-semibold text-gray-900 dark:text-white">
                 Delete Account
               </Text>
@@ -276,13 +351,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => {
-                    setShowDeleteModal(false);
-                    Alert.alert(
-                      "Account Deleted",
-                      "Your account has been deleted successfully"
-                    );
-                  }}
+                  onPress={handleDeleteAccount}
                   className="flex-1 bg-red-500 p-3 rounded-lg"
                 >
                   <Text className="font-semibold text-center text-white">
@@ -319,10 +388,7 @@ const ProfileScreen = () => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => {
-                    setShowLogoutModal(false);
-                    handleLogout();
-                  }}
+                  onPress={handleLogout}
                   className="flex-1 bg-blue-500 p-3 rounded-lg"
                 >
                   <Text className="font-semibold text-center text-white">
